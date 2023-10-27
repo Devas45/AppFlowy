@@ -79,6 +79,7 @@ export const CellOptionsPopup = ({
             onChange={(e) => setValue(e.target.value)}
             placeholder={t('grid.selectOption.searchOption') ?? ''}
             onKeyDown={onKeyDown}
+            style={{ width: '100%' }}
           />
           <div className={'font-mono text-text-caption'}>{value.length}/30</div>
         </div>

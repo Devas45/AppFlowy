@@ -14,6 +14,19 @@ import '../../../layout/sizes.dart';
 import '../../../../../widgets/row/cells/select_option_cell/extension.dart';
 import '../../common/type_option_separator.dart';
 import 'select_option_editor.dart';
+import 'package:angular/angular.dart';
+import 'package:primeng/chips.dart'; 
+
+@Component(
+  selector: 'app-root',
+  template: '''
+    <p-chips [(ngModel)]="values"></p-chips>
+  ''',
+  directives: [ChipsModule], 
+)
+class AppComponent {
+  List<String> values = [];
+}
 
 class SelectOptionTypeOptionWidget extends StatelessWidget {
   final List<SelectOptionPB> options;
@@ -36,30 +49,53 @@ class SelectOptionTypeOptionWidget extends StatelessWidget {
         options: options,
         typeOptionAction: typeOptionAction,
       ),
-      child:
-          BlocBuilder<SelectOptionTypeOptionBloc, SelectOptionTypeOptionState>(
+      child: BlocBuilder<SelectOptionTypeOptionBloc, SelectOptionTypeOptionState>(
         builder: (context, state) {
-          final List<Widget> children = [
-            const TypeOptionSeparator(),
-            const OptionTitle(),
-            if (state.isEditingOption)
-              CreateOptionTextField(popoverMutex: popoverMutex),
-            if (state.options.isNotEmpty && state.isEditingOption)
-              const VSpace(10),
-            if (state.options.isEmpty && !state.isEditingOption)
-              const _AddOptionButton(),
-            _OptionList(popoverMutex: popoverMutex)
-          ];
-
-          return ListView.builder(
-            shrinkWrap: true,
-            itemCount: children.length,
-            itemBuilder: (context, index) {
-              return children[index];
-            },
+          return Column(
+            children: [
+              const TypeOptionSeparator(),
+              const OptionTitle(),
+              if (state.isEditingOption)
+                CreateOptionTextField(popoverMutex: popoverMutex),
+              if (state.options.isNotEmpty && state.isEditingOption)
+                const VSpace(10),
+              if (state.options.isEmpty && !state.isEditingOption)
+                _AddOptionButton(),
+              _OptionChips(state.options, popoverMutex),
+            ],
           );
         },
       ),
+    );
+  }
+}
+
+class _OptionChips extends StatelessWidget {
+  final List<SelectOptionPB> options;
+  final PopoverMutex? popoverMutex;
+
+  const _OptionChips(this.options, this.popoverMutex, {Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8.0, 
+      children: options.map((option) {
+        return InputChip(
+          label: Text(option.name), 
+          selected: option.selected, 
+          onSelected: (selected) {
+            context.read<SelectOptionTypeOptionBloc>().add(
+              SelectOptionTypeOptionEvent.toggleSelection(option),
+            );
+          },
+          onDeleted: () {
+            context.read<SelectOptionTypeOptionBloc>().add(
+              SelectOptionTypeOptionEvent.deleteOption(option),
+            );
+          },
+        );
+      }).toList(),
     );
   }
 }
@@ -73,11 +109,11 @@ class OptionTitle extends StatelessWidget {
       builder: (context, state) {
         final List<Widget> children = [
           Padding(
-            padding: const EdgeInsets.only(left: 9),
-            child: FlowyText.medium(
-              LocaleKeys.grid_field_optionTitle.tr(),
-            ),
-          )
+          padding: const EdgeInsets.only(left: 9), 
+          child: FlowyText.medium(
+            LocaleKeys.grid_field_optionTitle.tr(),
+          ),
+        ),
         ];
         if (state.options.isNotEmpty && !state.isEditingOption) {
           children.add(const Spacer());
